@@ -16,8 +16,8 @@ app.use((req, res, next) => {
 });
 
 // Import mock company and contact databases
-const mockCompanies = require('./mock-data');
-const mockContacts = require('./mock-contacts');
+const mockCompanies = require('./data/companies');
+const mockContacts = require('./data/contacts');
 
 // Authentication endpoint
 app.post('/authenticate', (req, res) => {
@@ -150,7 +150,7 @@ app.post('/search/company', verifyToken, (req, res) => {
       return false;
     }
     if (technologies && technologies.length > 0) {
-      const hasTech = technologies.some(tech => 
+      const hasTech = technologies.some(tech =>
         company.technologies.some(ct => ct.toLowerCase().includes(tech.toLowerCase()))
       );
       if (!hasTech) return false;

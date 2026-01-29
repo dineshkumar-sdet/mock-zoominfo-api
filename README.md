@@ -20,6 +20,17 @@ This guide shows you how to search for and retrieve data for the newly added com
 
 ---
 
+## Project Structure
+
+- `src/server.js` - Express server and endpoints
+- `src/data/companies.js` - Mock company data
+- `src/data/contacts.js` - Mock contact data
+- `scripts/test-api.js` - API test runner
+- `examples/` - JavaScript and Python client examples
+- `postman/` - Postman collection for the API
+
+---
+
 ## Testing Burger King
 
 ### Search by Name
@@ -427,7 +438,7 @@ All searches return:
 ## Troubleshooting
 
 **Issue**: "Company not found"
-- Check that the server is running with the updated `mock-data.js`
+- Check that the server is running with the updated `src/data/companies.js`
 - Verify your search criteria matches the company data
 - Try a broader search (e.g., just company name without other filters)
 
