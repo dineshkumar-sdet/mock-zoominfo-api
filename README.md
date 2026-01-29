@@ -63,6 +63,19 @@ curl -X POST http://localhost:3000/enrich/company \
   }'
 ```
 
+### Enrich Burger King with Contacts
+```bash
+curl -X POST http://localhost:3000/enrich/company \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -d '{
+    "companyId": "100111222",
+    "includeContacts": true,
+    "contactsLimit": 5,
+    "contactFields": ["fullName", "jobTitle", "email", "directPhone", "linkedInUrl"]
+  }'
+```
+
 ---
 
 ## Testing Walmart
@@ -190,6 +203,22 @@ print(f"Found: {burger_king['data'][0]['companyName']}")
 print(f"Location: {burger_king['data'][0]['address']['city']}, {burger_king['data'][0]['address']['state']}")
 print(f"Employees: {burger_king['data'][0]['employees']:,}")
 
+# Enrich Burger King with contacts
+burger_king_with_contacts = requests.post(
+    'http://localhost:3000/enrich/company',
+    json={
+        'companyId': '100111222',
+        'includeContacts': True,
+        'contactsLimit': 3,
+        'contactFields': ['fullName', 'jobTitle', 'email']
+    },
+    headers=headers
+).json()
+
+print("\nContacts:")
+for contact in burger_king_with_contacts['data']['contacts']:
+    print(f"  - {contact['fullName']} ({contact['jobTitle']})")
+
 # Search for Walmart
 walmart = requests.post(
     'http://localhost:3000/search/company',
@@ -239,6 +268,20 @@ async function testNewCompanies() {
   
   console.log('Burger King:', burgerKing.data.data[0].companyName);
   console.log('Industry:', burgerKing.data.data[0].primaryIndustry);
+
+  // Enrich Burger King with contacts
+  const burgerKingEnrich = await axios.post(
+    'http://localhost:3000/enrich/company',
+    {
+      companyId: '100111222',
+      includeContacts: true,
+      contactsLimit: 3,
+      contactFields: ['fullName', 'jobTitle', 'email']
+    },
+    { headers }
+  );
+
+  console.log('\nContacts:', burgerKingEnrich.data.data.contacts);
 
   // Search for Walmart
   const walmart = await axios.post(
@@ -304,6 +347,32 @@ curl -X POST http://localhost:3000/search/company \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
   -d '{
     "revenueMin": 1000000000
+  }'
+```
+
+---
+
+## Contact Endpoints
+
+### Search Contacts by Company
+```bash
+curl -X POST http://localhost:3000/search/contact \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -d '{
+    "companyId": "100111222",
+    "jobTitle": "Director"
+  }'
+```
+
+### Enrich Contact by Email
+```bash
+curl -X POST http://localhost:3000/enrich/contact \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -d '{
+    "email": "maria.lopez@burgerking.com",
+    "outputFields": ["fullName", "jobTitle", "email", "companyName", "linkedInUrl"]
   }'
 ```
 

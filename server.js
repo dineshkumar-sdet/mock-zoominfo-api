@@ -15,8 +15,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Import mock company database from external file
+// Import mock company and contact databases
 const mockCompanies = require('./mock-data');
+const mockContacts = require('./mock-contacts');
 
 // Authentication endpoint
 app.post('/authenticate', (req, res) => {
@@ -207,17 +208,31 @@ app.post('/search/company', verifyToken, (req, res) => {
 
 // Company Enrich endpoint (get full company details by ID)
 app.post('/enrich/company', verifyToken, (req, res) => {
-  const { companyId, companyName, website, outputFields = [] } = req.body;
+  const {
+    companyId,
+    companyName,
+    website,
+    outputFields = [],
+    includeContacts = false,
+    contactFields = [],
+    contactsLimit = 10
+  } = req.body;
 
   let company = null;
+  let matchType = 'full_match';
 
   // Find company by ID, name, or website
   if (companyId) {
     company = mockCompanies.find(c => c.id === companyId);
   } else if (companyName) {
-    company = mockCompanies.find(c => 
-      c.companyName.toLowerCase() === companyName.toLowerCase()
-    );
+    const normalizedName = companyName.toLowerCase();
+    company = mockCompanies.find(c => c.companyName.toLowerCase() === normalizedName);
+    if (!company) {
+      company = mockCompanies.find(c => c.companyName.toLowerCase().includes(normalizedName));
+      if (company) {
+        matchType = 'partial_match';
+      }
+    }
   } else if (website) {
     company = mockCompanies.find(c => 
       c.website.toLowerCase() === website.toLowerCase()
@@ -233,6 +248,21 @@ app.post('/enrich/company', verifyToken, (req, res) => {
     });
   }
 
+  const shouldIncludeContacts = includeContacts || outputFields.includes('contacts');
+
+  const filterContacts = (contacts, fields) => {
+    if (!fields || fields.length === 0) return contacts;
+    return contacts.map(contact => {
+      const filteredContact = { id: contact.id };
+      fields.forEach(field => {
+        if (contact[field] !== undefined) {
+          filteredContact[field] = contact[field];
+        }
+      });
+      return filteredContact;
+    });
+  };
+
   // Filter output fields if specified
   let result = company;
   if (outputFields && outputFields.length > 0) {
@@ -240,6 +270,165 @@ app.post('/enrich/company', verifyToken, (req, res) => {
     outputFields.forEach(field => {
       if (company[field] !== undefined) {
         result[field] = company[field];
+      }
+    });
+  }
+
+  if (shouldIncludeContacts) {
+    const contacts = mockContacts
+      .filter(contact => contact.companyId === company.id)
+      .slice(0, Math.max(0, contactsLimit));
+    const filteredContacts = filterContacts(contacts, contactFields);
+    result = { ...result, contacts: filteredContacts };
+  }
+
+  res.json({
+    success: true,
+    data: result,
+    matchType: matchType,
+    creditUsed: true
+  });
+});
+
+// Contact Search endpoint
+app.post('/search/contact', verifyToken, (req, res) => {
+  const {
+    firstName,
+    lastName,
+    fullName,
+    jobTitle,
+    department,
+    managementLevel,
+    email,
+    city,
+    state,
+    country,
+    companyId,
+    companyName,
+    page = 1,
+    pageSize = 10,
+    sortBy = 'fullName',
+    sortOrder = 'asc',
+    outputFields = []
+  } = req.body;
+
+  let filteredContacts = mockContacts.filter(contact => {
+    if (firstName && !contact.firstName.toLowerCase().includes(firstName.toLowerCase())) {
+      return false;
+    }
+    if (lastName && !contact.lastName.toLowerCase().includes(lastName.toLowerCase())) {
+      return false;
+    }
+    if (fullName && !contact.fullName.toLowerCase().includes(fullName.toLowerCase())) {
+      return false;
+    }
+    if (jobTitle && !contact.jobTitle.toLowerCase().includes(jobTitle.toLowerCase())) {
+      return false;
+    }
+    if (department && !contact.department.toLowerCase().includes(department.toLowerCase())) {
+      return false;
+    }
+    if (managementLevel && contact.managementLevel.toLowerCase() !== managementLevel.toLowerCase()) {
+      return false;
+    }
+    if (email && contact.email.toLowerCase() !== email.toLowerCase()) {
+      return false;
+    }
+    if (city && contact.address.city.toLowerCase() !== city.toLowerCase()) {
+      return false;
+    }
+    if (state && contact.address.state.toLowerCase() !== state.toLowerCase()) {
+      return false;
+    }
+    if (country && contact.address.country.toLowerCase() !== country.toLowerCase()) {
+      return false;
+    }
+    if (companyId && contact.companyId !== companyId) {
+      return false;
+    }
+    if (companyName && !contact.companyName.toLowerCase().includes(companyName.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
+
+  // Sort results
+  filteredContacts.sort((a, b) => {
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
+    if (sortOrder === 'asc') {
+      return aVal > bVal ? 1 : -1;
+    }
+    return aVal < bVal ? 1 : -1;
+  });
+
+  // Paginate results
+  const totalResults = filteredContacts.length;
+  const totalPages = Math.ceil(totalResults / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedResults = filteredContacts.slice(startIndex, endIndex);
+
+  // Filter output fields if specified
+  let results = paginatedResults;
+  if (outputFields && outputFields.length > 0) {
+    results = paginatedResults.map(contact => {
+      const filteredContact = { id: contact.id };
+      outputFields.forEach(field => {
+        if (contact[field] !== undefined) {
+          filteredContact[field] = contact[field];
+        }
+      });
+      return filteredContact;
+    });
+  }
+
+  res.json({
+    success: true,
+    data: results,
+    pagination: {
+      currentPage: page,
+      pageSize: pageSize,
+      totalResults: totalResults,
+      totalPages: totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1
+    },
+    query: req.body
+  });
+});
+
+// Contact Enrich endpoint (get full contact details by ID or email)
+app.post('/enrich/contact', verifyToken, (req, res) => {
+  const { contactId, email, fullName, companyId, outputFields = [] } = req.body;
+
+  let contact = null;
+
+  if (contactId) {
+    contact = mockContacts.find(c => c.id === contactId);
+  } else if (email) {
+    contact = mockContacts.find(c => c.email.toLowerCase() === email.toLowerCase());
+  } else if (fullName && companyId) {
+    contact = mockContacts.find(c =>
+      c.fullName.toLowerCase() === fullName.toLowerCase() && c.companyId === companyId
+    );
+  }
+
+  if (!contact) {
+    return res.status(404).json({
+      success: false,
+      error: 'Contact not found',
+      errorCode: 'CONTACT_NOT_FOUND',
+      matchType: 'no_match'
+    });
+  }
+
+  let result = contact;
+  if (outputFields && outputFields.length > 0) {
+    result = { id: contact.id };
+    outputFields.forEach(field => {
+      if (contact[field] !== undefined) {
+        result[field] = contact[field];
       }
     });
   }
@@ -315,6 +504,27 @@ app.get('/lookup/search/company', verifyToken, (req, res) => {
   });
 });
 
+// Lookup available contact search fields
+app.get('/lookup/search/contact', verifyToken, (req, res) => {
+  res.json({
+    success: true,
+    searchFields: [
+      { field: 'firstName', type: 'string', description: 'First name' },
+      { field: 'lastName', type: 'string', description: 'Last name' },
+      { field: 'fullName', type: 'string', description: 'Full name' },
+      { field: 'jobTitle', type: 'string', description: 'Job title' },
+      { field: 'department', type: 'string', description: 'Department' },
+      { field: 'managementLevel', type: 'string', description: 'Management level' },
+      { field: 'email', type: 'string', description: 'Work email' },
+      { field: 'city', type: 'string', description: 'City' },
+      { field: 'state', type: 'string', description: 'State/Province' },
+      { field: 'country', type: 'string', description: 'Country' },
+      { field: 'companyId', type: 'string', description: 'Company ID' },
+      { field: 'companyName', type: 'string', description: 'Company name' }
+    ]
+  });
+});
+
 // Lookup available output fields
 app.get('/lookup/enrich/company', verifyToken, (req, res) => {
   res.json({
@@ -346,6 +556,37 @@ app.get('/lookup/enrich/company', verifyToken, (req, res) => {
       { field: 'facebookUrl', type: 'string', description: 'Facebook URL' },
       { field: 'twitterUrl', type: 'string', description: 'Twitter URL' },
       { field: 'technologies', type: 'array', description: 'Technologies used' },
+      { field: 'lastUpdated', type: 'string', description: 'Last updated date' },
+      { field: 'validDate', type: 'string', description: 'Valid date' },
+      { field: 'contacts', type: 'array', description: 'Associated contacts' }
+    ]
+  });
+});
+
+// Lookup available output fields for contacts
+app.get('/lookup/enrich/contact', verifyToken, (req, res) => {
+  res.json({
+    success: true,
+    outputFields: [
+      { field: 'id', type: 'string', description: 'Unique contact identifier' },
+      { field: 'firstName', type: 'string', description: 'First name' },
+      { field: 'lastName', type: 'string', description: 'Last name' },
+      { field: 'fullName', type: 'string', description: 'Full name' },
+      { field: 'jobTitle', type: 'string', description: 'Job title' },
+      { field: 'jobFunction', type: 'string', description: 'Job function' },
+      { field: 'department', type: 'string', description: 'Department' },
+      { field: 'managementLevel', type: 'string', description: 'Management level' },
+      { field: 'email', type: 'string', description: 'Work email' },
+      { field: 'emailStatus', type: 'string', description: 'Email status' },
+      { field: 'directPhone', type: 'string', description: 'Direct phone' },
+      { field: 'mobilePhone', type: 'string', description: 'Mobile phone' },
+      { field: 'officePhone', type: 'string', description: 'Office phone' },
+      { field: 'linkedInUrl', type: 'string', description: 'LinkedIn profile URL' },
+      { field: 'address', type: 'object', description: 'Contact location' },
+      { field: 'companyId', type: 'string', description: 'Company ID' },
+      { field: 'companyName', type: 'string', description: 'Company name' },
+      { field: 'companyWebsite', type: 'string', description: 'Company website' },
+      { field: 'companyPhone', type: 'string', description: 'Company phone' },
       { field: 'lastUpdated', type: 'string', description: 'Last updated date' },
       { field: 'validDate', type: 'string', description: 'Valid date' }
     ]
@@ -396,10 +637,14 @@ app.listen(PORT, () => {
   console.log('\nAvailable endpoints:');
   console.log('POST   /authenticate');
   console.log('POST   /search/company');
+  console.log('POST   /search/contact');
   console.log('POST   /enrich/company');
+  console.log('POST   /enrich/contact');
   console.log('POST   /search/company/bulk');
   console.log('GET    /search/company/bulk/:jobId');
   console.log('GET    /lookup/search/company');
+  console.log('GET    /lookup/search/contact');
   console.log('GET    /lookup/enrich/company');
+  console.log('GET    /lookup/enrich/contact');
   console.log('GET    /user/usage');
 });
