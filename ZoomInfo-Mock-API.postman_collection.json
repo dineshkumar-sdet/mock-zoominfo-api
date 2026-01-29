@@ -1,0 +1,460 @@
+{
+  "info": {
+    "name": "ZoomInfo Mock API",
+    "description": "Complete collection for testing ZoomInfo Company Search Mock API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Authenticate with Username/Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.jwt);",
+                  "    console.log('JWT Token saved:', jsonData.jwt.substring(0, 30) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/authenticate",
+              "host": ["{{base_url}}"],
+              "path": ["authenticate"]
+            },
+            "description": "Authenticate and receive a JWT token valid for 1 hour"
+          },
+          "response": []
+        },
+        {
+          "name": "Authenticate with PKI",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.jwt);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test@example.com\",\n  \"clientId\": \"your-client-id\",\n  \"privateKey\": \"your-private-key\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/authenticate",
+              "host": ["{{base_url}}"],
+              "path": ["authenticate"]
+            },
+            "description": "Authenticate using PKI method"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Company Search",
+      "item": [
+        {
+          "name": "Search by Company Name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Microsoft\",\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/search/company",
+              "host": ["{{base_url}}"],
+              "path": ["search", "company"]
+            },
+            "description": "Search companies by name"
+          },
+          "response": []
+        },
+        {
+          "name": "Search by Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"WA\",\n  \"country\": \"United States\",\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/search/company",
+              "host": ["{{base_url}}"],
+              "path": ["search", "company"]
+            },
+            "description": "Search companies by location"
+          },
+          "response": []
+        },
+        {
+          "name": "Search by Revenue & Employees",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"revenueMin\": 1000000000,\n  \"employeesMin\": 5000,\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/search/company",
+              "host": ["{{base_url}}"],
+              "path": ["search", "company"]
+            },
+            "description": "Search companies by revenue and employee count"
+          },
+          "response": []
+        },
+        {
+          "name": "Search by Industry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"industry\": \"Software & Technology\",\n  \"employeesMin\": 1000,\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/search/company",
+              "host": ["{{base_url}}"],
+              "path": ["search", "company"]
+            },
+            "description": "Search companies by industry"
+          },
+          "response": []
+        },
+        {
+          "name": "Search by Technologies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"technologies\": [\"AWS\", \"React\"],\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/search/company",
+              "host": ["{{base_url}}"],
+              "path": ["search", "company"]
+            },
+            "description": "Search companies by technologies they use"
+          },
+          "response": []
+        },
+        {
+          "name": "Search with Specific Output Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"industry\": \"Software & Technology\",\n  \"outputFields\": [\"companyName\", \"website\", \"revenue\", \"employees\"],\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/search/company",
+              "host": ["{{base_url}}"],
+              "path": ["search", "company"]
+            },
+            "description": "Search with only specific fields returned"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Company Enrich",
+      "item": [
+        {
+          "name": "Enrich by Company ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"344589814\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/enrich/company",
+              "host": ["{{base_url}}"],
+              "path": ["enrich", "company"]
+            },
+            "description": "Get full company details by ZoomInfo ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Enrich by Company Name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Salesforce Inc\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/enrich/company",
+              "host": ["{{base_url}}"],
+              "path": ["enrich", "company"]
+            },
+            "description": "Get full company details by company name"
+          },
+          "response": []
+        },
+        {
+          "name": "Enrich by Website",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"website\": \"www.microsoft.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/enrich/company",
+              "host": ["{{base_url}}"],
+              "path": ["enrich", "company"]
+            },
+            "description": "Get full company details by website"
+          },
+          "response": []
+        },
+        {
+          "name": "Enrich with Specific Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": \"344589814\",\n  \"outputFields\": [\"companyName\", \"website\", \"revenue\", \"employees\", \"technologies\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/enrich/company",
+              "host": ["{{base_url}}"],
+              "path": ["enrich", "company"]
+            },
+            "description": "Get specific fields only"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Bulk Operations",
+      "item": [
+        {
+          "name": "Submit Bulk Search Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('job_id', jsonData.jobId);",
+                  "    console.log('Job ID saved:', jsonData.jobId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobName\": \"Software Companies Search\",\n  \"searchCriteria\": {\n    \"industry\": \"Software & Technology\",\n    \"employeesMin\": 1000\n  },\n  \"maxResults\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/search/company/bulk",
+              "host": ["{{base_url}}"],
+              "path": ["search", "company", "bulk"]
+            },
+            "description": "Submit a bulk company search job"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Bulk Job Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/search/company/bulk/{{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["search", "company", "bulk", "{{job_id}}"]
+            },
+            "description": "Check the status of a bulk search job"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Lookup & Discovery",
+      "item": [
+        {
+          "name": "Get Available Search Fields",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lookup/search/company",
+              "host": ["{{base_url}}"],
+              "path": ["lookup", "search", "company"]
+            },
+            "description": "Get list of available search fields and their types"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Enrich Fields",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lookup/enrich/company",
+              "host": ["{{base_url}}"],
+              "path": ["lookup", "enrich", "company"]
+            },
+            "description": "Get list of available output fields for enrichment"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Usage & Monitoring",
+      "item": [
+        {
+          "name": "Get Usage Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/user/usage",
+              "host": ["{{base_url}}"],
+              "path": ["user", "usage"]
+            },
+            "description": "Get current API usage and limits"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
